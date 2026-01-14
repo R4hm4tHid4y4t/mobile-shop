@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -13,159 +12,117 @@ class GridSepatuPria extends StatefulWidget {
 
 class _GridSepatuPriaState extends State<GridSepatuPria> {
   List<dynamic> sepatuPriaProduct = [];
+  bool isLoading = true;
+  String errorMessage = "";
   
   Future<void> getSepatuPria() async {
     String baseUrl = ApiConfig.baseUrl;
     String urlSepatuPria = "$baseUrl/servershop_rahmat/gridsepatupria.php";
+    
+    setState(() { isLoading = true; errorMessage = ""; });
+
     try {
-      var response = await http.get(Uri.parse(urlSepatuPria));
-      setState(() {
-        sepatuPriaProduct = json.decode(response.body);
-      });
-    } catch (exc) {
-      if (kDebugMode) {
-        print(exc);
+      var response = await http.get(Uri.parse(urlSepatuPria)).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        setState(() {
+          sepatuPriaProduct = json.decode(response.body);
+          isLoading = false;
+        });
+      } else {
+         setState(() { isLoading = false; errorMessage = "Server Error: ${response.statusCode}"; });
       }
+    } catch (exc) {
+      setState(() { isLoading = false; errorMessage = "Koneksi Gagal: $exc"; });
     }
   }
   
   @override
-  void initState() {
-    super.initState();
-    getSepatuPria();
-  }
+  void initState() { super.initState(); getSepatuPria(); }
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Men's Shoes",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
+        title: const Text("Men's Shoes", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.green,
         centerTitle: true,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.shopping_cart,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-        ],
+        leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.white)),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.7,
-          ),
-          itemCount: sepatuPriaProduct.length,
-          itemBuilder: (context, index) {
-            final item = sepatuPriaProduct[index];
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailSepatuPria(item: item)
-                    )
-                );
-              },
-              child: Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      child: Image.network(
-                        item['images'],
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Text(
-                        item['name'],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12
-                        )
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              "Rp.${item['price']}",
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color.fromARGB(137, 71, 152, 202),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10
-                              )
+      body: isLoading 
+        ? const Center(child: CircularProgressIndicator()) 
+        : errorMessage.isNotEmpty
+          ? Center(child: Text(errorMessage, textAlign: TextAlign.center))
+          : sepatuPriaProduct.isEmpty
+            ? const Center(child: Text("Produk Kosong"))
+            : Padding(
+                padding: const EdgeInsets.all(12),
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.7,
+                  ),
+                  itemCount: sepatuPriaProduct.length,
+                  itemBuilder: (context, index) {
+                    final item = sepatuPriaProduct[index];
+                    // FIX: Baca 'image' atau 'images'
+                    String imageUrl = (item['image'] ?? item['images'] ?? '').toString().trim();
+
+                    return GestureDetector(
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DetailSepatuPria(item: item))),
+                      child: Card(
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: <Widget>[
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                                child: Image.network(
+                                  imageUrl,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (ctx, err, stack) => const Center(child: Icon(Icons.broken_image, color: Colors.grey)),
+                                ),
+                              ),
                             ),
-                          ),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.favorite,
-                                color: Colors.red,
-                                size: 12,
+                            Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(item['name'] ?? '-', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                            ),
+                            // BAGIAN HARGA & PROMO DIKEMBALIKAN SEPERTI SEMULA
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      "Rp.${item['price']}",
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(color: Color.fromARGB(137, 71, 152, 202), fontWeight: FontWeight.bold, fontSize: 10),
+                                    ),
+                                  ),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.favorite, color: Colors.red, size: 12),
+                                      const SizedBox(width: 3),
+                                      Text(
+                                        "Rp.${item['promo']}",
+                                        style: const TextStyle(color: Color.fromARGB(136, 56, 176, 88), fontWeight: FontWeight.bold, fontSize: 10),
+                                      ),
+                                    ],
+                                  )
+                                ],
                               ),
-                              const SizedBox(width: 3),
-                              Text(
-                                "Rp.${item['promo']}",
-                                style: const TextStyle(
-                                  color: Color.fromARGB(136, 56, 176, 88),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10
-                                )
-                              ),
-                            ],
-                          )
-                        ],
+                            ),
+                            const SizedBox(height: 5),
+                          ]
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                  ]
-                ),
+                    );
+                  }
+                )
               ),
-            );
-          }
-        )
-      ),
     );
   }
 }
@@ -176,117 +133,40 @@ class DetailSepatuPria extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
+    String imageUrl = (item['image'] ?? item['images'] ?? '').toString().trim();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Rahmat Online Shop",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
-        backgroundColor: Colors.green,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.shopping_cart,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.camera_alt_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ],
-      ),
+      appBar: AppBar(title: const Text("Detail Produk"), backgroundColor: Colors.green),
       body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Image.network(
+              imageUrl, height: 300, width: double.infinity, fit: BoxFit.cover,
+              errorBuilder: (ctx, err, stack) => const SizedBox(height: 300, child: Center(child: Icon(Icons.broken_image, size: 50))),
+            ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  item['images'],
-                  height: 280,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Text(
-                'Product Description',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold
-                )
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                item['description'],
-                style: const TextStyle(
-                  color: Colors.black54,
-                  fontSize: 14,
-                  height: 1.5
-                )
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    "Rp.${item['price']}",
-                    style: const TextStyle(
-                      color: Color.fromARGB(137, 71, 152, 202),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16
-                    )
-                  ),
+                  Text(item['name'] ?? '-', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  // HARGA DETAIL JUGA DIKEMBALIKAN LENGKAP
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Icon(
-                        Icons.favorite,
-                        color: Colors.red,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "Rp.${item['promo']}",
-                        style: const TextStyle(
-                          color: Color.fromARGB(136, 56, 176, 88),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16
-                        )
-                      ),
+                      Text("Rp.${item['price']}", style: const TextStyle(fontSize: 18, color: Color.fromARGB(137, 71, 152, 202), fontWeight: FontWeight.bold)),
+                      Row(
+                        children: [
+                          const Icon(Icons.favorite, color: Colors.red),
+                          const SizedBox(width: 5),
+                          Text("Rp.${item['promo']}", style: const TextStyle(fontSize: 18, color: Color.fromARGB(136, 56, 176, 88), fontWeight: FontWeight.bold)),
+                        ],
+                      )
                     ],
-                  )
+                  ),
+                  const SizedBox(height: 20),
+                  const Text("Deskripsi:", style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(item['description'] ?? '-'),
                 ],
               ),
             ),

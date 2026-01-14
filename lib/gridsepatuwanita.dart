@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -6,166 +5,80 @@ import 'package:shoprahmat/config/api_config.dart';
 
 class GridSepatuWanita extends StatefulWidget {
   const GridSepatuWanita({super.key});
-  
   @override
   State<GridSepatuWanita> createState() => _GridSepatuWanitaState();
 }
 
 class _GridSepatuWanitaState extends State<GridSepatuWanita> {
   List<dynamic> sepatuWanitaProduct = [];
+  bool isLoading = true;
+  String errorMessage = "";
   
   Future<void> getSepatuWanita() async {
     String baseUrl = ApiConfig.baseUrl;
     String urlSepatuWanita = "$baseUrl/servershop_rahmat/gridsepatuwanita.php";
+    
+    setState(() { isLoading = true; errorMessage = ""; });
+
     try {
-      var response = await http.get(Uri.parse(urlSepatuWanita));
-      setState(() {
-        sepatuWanitaProduct = json.decode(response.body);
-      });
-    } catch (exc) {
-      if (kDebugMode) {
-        print(exc);
+      var response = await http.get(Uri.parse(urlSepatuWanita)).timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        setState(() {
+          sepatuWanitaProduct = json.decode(response.body);
+          isLoading = false;
+        });
+      } else {
+         setState(() { isLoading = false; errorMessage = "Server Error: ${response.statusCode}"; });
       }
+    } catch (exc) {
+      setState(() { isLoading = false; errorMessage = "Koneksi Gagal: $exc"; });
     }
   }
   
   @override
-  void initState() {
-    super.initState();
-    getSepatuWanita();
-  }
+  void initState() { super.initState(); getSepatuWanita(); }
   
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Women's Heels",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
-          ),
-        ),
-        backgroundColor: Colors.green,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.shopping_cart,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(12),
-        child: GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.7,
-          ),
-          itemCount: sepatuWanitaProduct.length,
-          itemBuilder: (context, index) {
-            final item = sepatuWanitaProduct[index];
-            return GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DetailSepatuWanita(item: item)
-                  )
+      appBar: AppBar(title: const Text("Women's Heels", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)), backgroundColor: Colors.green, centerTitle: true, leading: IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.arrow_back, color: Colors.white))),
+      body: isLoading ? const Center(child: CircularProgressIndicator()) 
+        : errorMessage.isNotEmpty ? Center(child: Text(errorMessage))
+        : sepatuWanitaProduct.isEmpty ? const Center(child: Text("Produk Kosong"))
+        : Padding(
+            padding: const EdgeInsets.all(12),
+            child: GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 0.7),
+              itemCount: sepatuWanitaProduct.length,
+              itemBuilder: (context, index) {
+                final item = sepatuWanitaProduct[index];
+                String imageUrl = (item['image'] ?? item['images'] ?? '').toString().trim();
+                return GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => DetailSepatuWanita(item: item))),
+                  child: Card(
+                    elevation: 3, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    child: Column(children: [
+                      Expanded(child: ClipRRect(borderRadius: const BorderRadius.vertical(top: Radius.circular(12)), child: Image.network(imageUrl, width: double.infinity, fit: BoxFit.cover, errorBuilder: (ctx, err, stack) => const Icon(Icons.broken_image)))),
+                      Padding(padding: const EdgeInsets.all(8), child: Text(item['name']??'-', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12))),
+                      
+                      // HARGA & PROMO DIKEMBALIKAN
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Flexible(child: Text("Rp.${item['price']}", overflow: TextOverflow.ellipsis, style: const TextStyle(color: Color.fromARGB(137, 71, 152, 202), fontWeight: FontWeight.bold, fontSize: 10))),
+                            Row(children: [const Icon(Icons.favorite, color: Colors.red, size: 12), const SizedBox(width: 3), Text("Rp.${item['promo']}", style: const TextStyle(color: Color.fromARGB(136, 56, 176, 88), fontWeight: FontWeight.bold, fontSize: 10))]),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                    ]),
+                  ),
                 );
-              },
-              child: Card(
-                elevation: 3,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: <Widget>[
-                    ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                      child: Image.network(
-                        item['images'],
-                        height: 120,
-                        width: double.infinity,
-                        fit: BoxFit.cover
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: Text(
-                        item['name'],
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.black87,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12
-                        )
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              "Rp.${item['price']}",
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Color.fromARGB(137, 71, 152, 202),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 10
-                              )
-                            ),
-                          ),
-                          Row(
-                            children: [
-                              const Icon(
-                                Icons.favorite,
-                                color: Colors.red,
-                                size: 12,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                "Rp.${item['promo']}",
-                                style: const TextStyle(
-                                  color: Color.fromARGB(136, 56, 176, 88),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 10
-                                )
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ]
-                ),
-              ),
-            );
-          }
-        )
-      ),
+              }
+            )
+          ),
     );
   }
 }
@@ -173,126 +86,26 @@ class _GridSepatuWanitaState extends State<GridSepatuWanita> {
 class DetailSepatuWanita extends StatelessWidget {
   const DetailSepatuWanita({super.key, required this.item});
   final dynamic item;
-  
   @override
   Widget build(BuildContext context) {
+    String imageUrl = (item['image'] ?? item['images'] ?? '').toString().trim();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "Rahmat Online Shop",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 22,
+      appBar: AppBar(title: const Text("Detail Produk"), backgroundColor: Colors.green),
+      body: SingleChildScrollView(child: Column(children: [
+        Image.network(imageUrl, height: 300, width: double.infinity, fit: BoxFit.cover, errorBuilder: (ctx,err,stack)=>const Icon(Icons.broken_image, size: 50)),
+        Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(item['name']??'-', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Rp.${item['price']}", style: const TextStyle(fontSize: 18, color: Color.fromARGB(137, 71, 152, 202), fontWeight: FontWeight.bold)),
+              Row(children: [const Icon(Icons.favorite, color: Colors.red), const SizedBox(width: 5), Text("Rp.${item['promo']}", style: const TextStyle(fontSize: 18, color: Color.fromARGB(136, 56, 176, 88), fontWeight: FontWeight.bold))]),
+            ],
           ),
-        ),
-        backgroundColor: Colors.green,
-        centerTitle: true,
-        leading: IconButton(
-          onPressed: () {
-            Navigator.pop(context);
-          },
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-            size: 22,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.shopping_cart,
-              color: Colors.white,
-              size: 22,
-            ),
-          ),
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.camera_alt_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  item['images'],
-                  height: 280,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Text(
-                'Product Description',
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold
-                )
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Text(
-                item['description'],
-                style: const TextStyle(
-                  color: Colors.black54,
-                  fontSize: 14,
-                  height: 1.5
-                )
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Rp.${item['price']}",
-                    style: const TextStyle(
-                      color: Color.fromARGB(137, 71, 152, 202),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16
-                    )
-                  ),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.favorite,
-                        color: Colors.red,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        "Rp.${item['promo']}",
-                        style: const TextStyle(
-                          color: Color.fromARGB(136, 56, 176, 88),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16
-                        )
-                      ),
-                    ],
-                  )
-                ],
-              ),
-            ),
-          ]
-        ),
-      ),
+          const SizedBox(height: 20), const Text("Deskripsi:", style: TextStyle(fontWeight: FontWeight.bold)), Text(item['description']??'-'),
+        ]))
+      ])),
     );
   }
 }
