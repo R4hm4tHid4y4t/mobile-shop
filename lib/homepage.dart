@@ -9,6 +9,7 @@ import 'package:shoprahmat/gridbajupria.dart';
 import 'package:shoprahmat/gridsepatupria.dart';
 import 'package:shoprahmat/gridbajuwanita.dart';
 import 'package:shoprahmat/gridsepatuwanita.dart';
+import 'package:shoprahmat/cart.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,7 +23,7 @@ class _HomePageState extends State<HomePage> {
   PageController bannerController = PageController();
   List<dynamic> listProduct = [];
   Timer? bannerTamer;
-  bool isLoading = true; // Tambahkan status loading
+  bool isLoading = true;
 
   int indexBanner = 0;
   
@@ -43,7 +44,7 @@ class _HomePageState extends State<HomePage> {
 
   void bannerOnBoarding() {
     bannerTamer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (bannerController.hasClients) { // Cek apakah controller terpasang
+      if (bannerController.hasClients) {
         if (indexBanner < 2) {
           indexBanner++;
         } else {
@@ -63,14 +64,13 @@ class _HomePageState extends State<HomePage> {
     String urlProductItem = "$baseUrl/servershop_rahmat/allproductitem.php";
     
     if (kDebugMode) {
-      print("Requesting URL: $urlProductItem"); // Cek URL di console
+      print("Requesting URL: $urlProductItem");
     }
 
     try {
       var response = await http.get(Uri.parse(urlProductItem));
       
       if (response.statusCode == 200) {
-        // Cek apakah response benar-benar JSON
         final data = json.decode(response.body);
         setState(() {
           listProduct = data;
@@ -109,18 +109,30 @@ class _HomePageState extends State<HomePage> {
         ),
         backgroundColor: Colors.green,
         centerTitle: true,
-        // ... (Leading dan Actions sama seperti sebelumnya) ...
-        leading: IconButton(onPressed: (){}, icon: const Icon(Icons.menu, color: Colors.white)),
+        leading: IconButton(
+          onPressed: (){}, 
+          icon: const Icon(Icons.menu, color: Colors.white)
+        ),
         actions: [
-          IconButton(onPressed: (){}, icon: const Icon(Icons.shopping_cart, color: Colors.white)),
-          IconButton(onPressed: (){}, icon: const Icon(Icons.camera_alt_rounded, color: Colors.white)),
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const CartPage()),
+              );
+            },
+            icon: const Icon(Icons.shopping_cart, color: Colors.white)
+          ),
+          IconButton(
+            onPressed: (){}, 
+            icon: const Icon(Icons.camera_alt_rounded, color: Colors.white)
+          ),
         ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: <Widget>[
-            // ... (TextField Search sama) ...
-             TextField(
+            TextField(
               controller: searchProduct,
               decoration: const InputDecoration(
                 hintText: 'Search Product',
@@ -145,10 +157,8 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // ... (Menu Kategori Card sama seperti sebelumnya) ...
-            // Agar kode tidak terlalu panjang, saya persingkat bagian kategori
-            // Pastikan Anda tetap menyalin bagian Grid Kategori di sini (Electronik, Baju Pria, dll)
-             Padding(
+            // Menu Kategori
+            Padding(
               padding: const EdgeInsets.all(5),
               child: SizedBox(
                 height: 90,
@@ -165,8 +175,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-
-            // Popular Product Section (BAGIAN YANG DIPERBAIKI)
+            // Popular Product Section
             Padding(
               padding: const EdgeInsets.all(5),
               child: Column(
@@ -204,18 +213,19 @@ class _HomePageState extends State<HomePage> {
                       itemCount: listProduct.length,
                       itemBuilder: (context, index) {
                         final productTotal = listProduct[index];
-                        // Handling Error Gambar jika URL salah
                         return Card(
                           elevation: 5,
                           child: Column(
                             children: [
                               Expanded(
                                 child: Image.network(
-                                  productTotal['images'] ?? '', // Pastikan key JSON sesuai DB
+                                  productTotal['images'] ?? '',
                                   width: double.infinity,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) {
-                                    return const Center(child: Icon(Icons.broken_image, size: 50, color: Colors.grey));
+                                    return const Center(
+                                      child: Icon(Icons.broken_image, size: 50, color: Colors.grey)
+                                    );
                                   },
                                 ),
                               ),
@@ -256,7 +266,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Helper widget untuk kategori agar lebih rapi
   Widget _buildCategoryItem(BuildContext context, String title, String imgPath, Widget page) {
     return Card(
       elevation: 5,

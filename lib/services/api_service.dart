@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import '../models/user_model.dart';
+import 'package:flutter/foundation.dart'; // Tambahkan ini
 import '../models/cart_model.dart';
 
 class ApiService {
@@ -29,6 +29,9 @@ class ApiService {
       
       return jsonDecode(response.body);
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Register error: $e');
+      }
       return {'status': 'error', 'message': 'Terjadi kesalahan: $e'};
     }
   }
@@ -50,6 +53,9 @@ class ApiService {
       
       return jsonDecode(response.body);
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Login error: $e');
+      }
       return {'status': 'error', 'message': 'Terjadi kesalahan: $e'};
     }
   }
@@ -73,6 +79,9 @@ class ApiService {
       
       return jsonDecode(response.body);
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Add to cart error: $e');
+      }
       return {'status': 'error', 'message': 'Terjadi kesalahan: $e'};
     }
   }
@@ -90,7 +99,10 @@ class ApiService {
       }
       return null;
     } catch (e) {
-      print('Error getting cart: $e');
+      // ✅ PERBAIKAN: Ganti print dengan debugPrint
+      if (kDebugMode) {
+        debugPrint('Error getting cart: $e');
+      }
       return null;
     }
   }
@@ -112,6 +124,9 @@ class ApiService {
       
       return jsonDecode(response.body);
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Update cart error: $e');
+      }
       return {'status': 'error', 'message': 'Terjadi kesalahan: $e'};
     }
   }
@@ -129,6 +144,9 @@ class ApiService {
       
       return jsonDecode(response.body);
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Delete cart item error: $e');
+      }
       return {'status': 'error', 'message': 'Terjadi kesalahan: $e'};
     }
   }
