@@ -13,6 +13,9 @@ dependencies:
   cupertino_icons: ^1.0.2
   http: ^1.1.0
   flutter_dotenv: ^5.1.0
+  # --- Tambahan Library Baru ---
+  shared_preferences: ^2.2.0  # Untuk menyimpan sesi login & user ID
+  midtrans_snap: ^1.0.0       # Untuk menampilkan halaman pembayaran Midtrans
 
 dev_dependencies:
   flutter_test:
@@ -33,7 +36,6 @@ flutter:
     - lib/images/man-shoes.png
     - lib/images/woman-shoes.png
     - lib/images/shoppingchart.png
-  #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
